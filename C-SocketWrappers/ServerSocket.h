@@ -44,8 +44,17 @@ struct sockaddr_in assignPropandBindSocket(int sockDescriptor, struct sockaddr_i
     return server;
 }
 
-void bindSocket(int sockDescriptor, struct sockaddr_in server, int maxConn)
-{
+void bindSocket(int sockDescriptor, struct sockaddr_in server, int domain, int address, int portNumber){
+    server.sin_family = domain;
+    server.sin_addr.s_addr = htonl(address);
+    server.sin_port = htons(portNumber);
+
+    if (bind(sockDescriptor, (struct sockaddr *)&server, sizeof(server)) == -1)
+    {
+        puts("Failed to bind the socket \n");
+        exit(0);
+    }
+    puts("bind done");
 }
 
 void startServer(int sockDescriptor, char *messageToRespond)
@@ -71,12 +80,18 @@ void startServer(int sockDescriptor, char *messageToRespond)
         puts("Connection accepted");
         char *client_ip = inet_ntoa(client.sin_addr);
         int client_port = ntohs(client.sin_port);
-        /*if(read(new_socket, clientMessage, 2000) < 0){
+        printf("Connection From:\n>> Client IP : %s\n>> On Port : %d\n", client_ip, client_port);
+
+        if (read(new_socket, clientMessage, 2000) < 0)
+        {
             puts("Failed to recieve clients message");
-            exit(0);
-        }*/
-        //puts("Message from clinet : \n");
-        //puts(clientMessage);
+            //exit(0);
+        }
+        else
+        {
+            puts("Message from client :");
+            printf(">> %s\n", clientMessage);
+        }
 
         puts("Replying to request .... \n");
         if (write(new_socket, messageToRespond, strlen(messageToRespond)) < 0)
@@ -132,15 +147,81 @@ void startServerIPV6(int sockDescriptor, char *messageToRespond)
 }
 */
 
-void startSimpleIPV4(char * messageToReplay){
+/*void startServerUDP(int sockDescriptor, char *messageToRespond)
+{
+    puts("Starting server");
+    puts("Waiting for incoming connections...");
+    int c = sizeof(struct sockaddr_in);
+    struct sockaddr_in client;
+    int new_socket;
+    char *message, clientMessage[2000];
+
+    int len, n; 
+    n = recvfrom(sockfd, (char *)buffer, MAXLINE,  
+                MSG_WAITALL, ( struct sockaddr *) &cliaddr, 
+                &len); 
+    buffer[n] = '\0'; 
+    printf("Client : %s\n", buffer); 
+    sendto(sockfd, (const char *)hello, strlen(hello),  
+        MSG_CONFIRM, (const struct sockaddr *) &cliaddr, 
+            len); 
+    printf("Hello message sent.\n");  
+
+    while (1)
+    {
+        new_socket = recvfrom(sockDescriptor, (struct sockaddr *)&client, (socklen_t *)&c);
+        if (new_socket < 0)
+        {
+            perror("accept failed");
+            //close(sockDescriptor);
+            close(new_socket);
+            exit(0);
+        }
+        puts("Connection accepted");
+        char *client_ip = inet_ntoa(client.sin_addr);
+        int client_port = ntohs(client.sin_port);
+        printf("Connection From:\n Client IP: %s\n On Port: %d", client_ip, client_port);
+
+        if (read(new_socket, clientMessage, 2000) < 0)
+        {
+            puts("Failed to recieve clients message");
+            //exit(0);
+        }
+        else
+        {
+            puts("Message from clinet : \n");
+            puts(clientMessage);
+        }
+
+        puts("Replying to request .... \n");
+        if (write(new_socket, messageToRespond, strlen(messageToRespond)) < 0)
+        {
+            puts("Failed to write message to client");
+            exit(0);
+        }
+
+        close(new_socket);
+    }
+}*/
+
+void startSimpleIPV4(char *messageToReplay)
+{
     int socket = 0;
-    struct sockaddr_in server; 
+    struct sockaddr_in server;
 
     socket = createSocket(AF_INET, SOCK_STREAM, 0);
-    server = assignPropandBindSocket(socket, server, AF_INET, INADDR_ANY, 6000, 10);
+    server = assignPropandBindSocket(socket, server, AF_INET, INADDR_ANY, 6003, 10);
     startServer(socket, messageToReplay);
 }
 
+void startSimpleUDP(char *messageToReplay){
+    int socket = 0;
+    struct sockaddr_in server;
+
+    socket = createSocket(AF_INET, SOCK_DGRAM, 0);
+    bindSocket(socket, server, AF_INET, INADDR_ANY, 5000);
+
+}
 
 /*void startSimpleIPV6(char * messageToReplay){
     int socket = 0;
